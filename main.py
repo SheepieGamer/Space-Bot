@@ -195,7 +195,6 @@ async def star_chart(ctx: commands.Context, timezone: str = "EST", *, location: 
     latitude = float(first_result["lat"])
     longitude = float(first_result["lon"])
     
-    # Get current time in the specified timezone
     try:
         tz = pytz.timezone(timezone)
         dt = datetime.now(tz)
@@ -203,7 +202,6 @@ async def star_chart(ctx: commands.Context, timezone: str = "EST", *, location: 
         await msg.edit("Unknown timezone. Please specify a valid timezone.")
         return
     
-    # Generate the star chart asynchronously
     buffer = await asyncio.to_thread(generate_star_chart, latitude, longitude, dt)
 
     file = discord.File(buffer, filename="star_chart_detail.png")
