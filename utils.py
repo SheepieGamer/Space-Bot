@@ -3,9 +3,8 @@ import aiohttp
 import io
 from starplot import MapPlot, Projection, Star
 from starplot.styles import PlotStyle, extensions
-import tempfile
-import os
 from discord.ext import commands
+import pytz
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -182,3 +181,57 @@ async def load_cogs(bot: commands.Bot):
     for i in loaded:
         loaded_str += f"{i}, "
     print(f"{loaded_str} successfully loaded")
+
+async def fetch_moon_phase(timezone: str = "EST", location: str = "New York, USA"):
+    try:
+        tz = pytz.timezone(timezone)
+        dt = str(datetime.now(tz)).split(" ")[0]
+    except pytz.UnknownTimeZoneError:
+        return "Unknown timezone. Please specify a valid timezone."
+    
+    geocode_data = await retrieve("https://nominatim.openstreetmap.org/search", params={"q": location, "format": "json"}, api_key_required=False)
+    try:
+        if not geocode_data or not geocode_data[0].get("place_id"):
+            return "Unable to retrieve location data. Please try again with a different location. Maybe it was a typo?"
+    except IndexError:
+        return "Unable to retrieve location data. Please try again with a different location. Maybe it was a typo?"
+    
+    first_result = geocode_data[0]
+    latitude = float(first_result["lat"])
+    longitude = float(first_result["lon"])
+
+    url = "https://api.astronomyapi.com/api/v2/studio/moon-phase"
+    payload = {
+        "style": {
+            "moonStyle": "default",
+            "backgroundStyle": "stars",
+            "backgroundColor": "#000000",
+            "headingColor": "#ff2424",
+            "textColor": "#ff0000"
+        },
+        "observer": {
+            "latitude": latitude,
+            "longitude": longitude,
+            "date": dt
+        },
+        "view": {
+            "type": "landscape-simple",
+            "parameters": {}
+        }
+    }
+    
+    token = settings.ASTRO_API
+    headers = {
+        'Authorization': f"Basic {token}",
+        'Content-Type': 'application/json'
+    }
+    
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, json=payload, headers=headers) as response:
+            data = await response.json()
+            image_url = data["data"]["imageUrl"]
+            
+            async with session.get(image_url) as image_response:
+                image_bytes = await image_response.read()
+    
+    return image_bytes

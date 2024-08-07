@@ -109,7 +109,7 @@ class Space(commands.Cog):
         await msg.edit(content="", embed=embed)
 
     @commands.hybrid_command(name=cmd_info.ASTROS_NAME, description=cmd_info.ASTROS_DESC, aliases=cmd_info.ASTROS_ALIASES)
-    async def astronauts(self, ctx: commands.Context, max=30):
+    async def astronauts(self, ctx: commands.Context, max=commands.parameter(default=30, description="Maximum number of people to list. Caps at 30")):
         """
         Displays information about the current astronauts in space.
 
@@ -161,19 +161,53 @@ class Space(commands.Cog):
 
         buffer = await asyncio.to_thread(plot_map, float(longitude), float(latitude))
 
+        if str(latitude).startswith('-'):
+            new_latitude = f"{str(latitude).strip('-')}° S"
+        else:
+            new_latitude = f"{str(latitude).strip('+')}° N"
+
+        if str(longitude).startswith('-'):
+            new_longitude = f"{str(longitude).strip('-')}° W"
+        else:
+            new_longitude = f"{str(longitude).strip('+')}° E"
+
+
         file = discord.File(buffer, filename="iss-location.png")
         embed = discord.Embed(
             title="The International Space Station is currently at:",
-            description=f"**Latitude:** {latitude}\n"
-                        f"**Longitude:** {longitude}",
+            description=f"**Latitude:** {new_latitude}\n"
+                        f"**Longitude:** {new_longitude}",
             color=discord.Color.green()
         )
         embed.set_image(url="attachment://iss-location.png")
 
         await msg.edit(content="", embed=embed, attachments=[file])
 
+    @commands.hybrid_command(name='moon-phase')
+    async def moon_phase(self, ctx: commands.Context, timezone: str = "EST", *, location: str = "New York, USA"):
+        """
+        Displays the current moon phase image for the specified timezone and location.
+
+        Parameters:
+        timezone (str, optional): The timezone for the moon phase. Defaults to "EST".
+        location (str, optional): The location for which the moon phase is to be displayed. Defaults to "New York, USA".
+
+        Returns:
+        If the moon phase image is successfully fetched, it sends a message to the Discord channel with the image.
+        """
+        msg = await ctx.reply("Working on it...")
+        image_bytes = await fetch_moon_phase(timezone, location)
+        
+        if isinstance(image_bytes, str):
+            await msg.edit(content=image_bytes)
+        else:
+            file = discord.File(io.BytesIO(image_bytes), filename="moon_phase_image.png")
+            embed = discord.Embed(color=discord.Color.random())
+            embed.set_image(url="attachment://moon_phase_image.png")
+            await msg.edit(content=None, embed=embed, attachments=[file])
+
     @commands.hybrid_command(name="star-chart", description="Generates a star chart for the specified date and location.")
-    async def star_chart(self, ctx: commands.Context, timezone: str = "EST", *, location: str = "New York, USA"):
+    async def star_chart(self, ctx: commands.Context, timezone: str = commands.parameter(default="EST", description="The timezone you want the star chart to appear in."), *, location: str = commands.parameter(default="New York, USA", description="Search query for location. Doesn't need to be exact.")):
         """
         Generates a star chart for the specified date and location.
 
@@ -216,6 +250,43 @@ class Space(commands.Cog):
         embed.set_image(url="attachment://star_chart_detail.png")
 
         await msg.edit(content="", embed=embed, attachments=[file])
+
+    @commands.hybrid_command(name="space-fact", description="Shares a random space fact.")
+    async def space_fact(self, ctx: commands.Context):
+        """
+        This command sends a random space fact.
+
+        Parameters:
+        None.
+
+        Returns:
+        An image with a random space fact.
+        """
+        msg: discord.Message = await ctx.reply("Working on it...")
+        number = random.randint(1, 62)
+        url = f"https://www.spacecentre.nz/resources/facts/random/{number}.jpg"
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                if response.status != 200:
+                    await ctx.reply("Failed to retrieve image.")
+                    return
+
+                image_data = await response.read()
+
+        image_bytes = io.BytesIO(image_data)
+
+        embed = discord.Embed(
+            title="Random Space Fact",
+            color=discord.Color.random(),
+            url=url
+        )
+        embed.set_image(url=f"attachment://space_fact{number}.jpg")
+
+        # Send the image as an attachment
+        await msg.edit(content="", embed=embed, attachments=[discord.File(fp=image_bytes, filename=f"space_fact{number}.jpg")])
+
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Space(bot))

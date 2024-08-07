@@ -14,14 +14,6 @@ def main(bot: commands.Bot):
         post_potd.start()
         await load_cogs(bot)
 
-
-    @bot.command(name=cmd_info.SETUP_POTD_NAME, description=cmd_info.SETUP_POTD_DESC, aliases=cmd_info.SETUP_POTD_ALIASES)
-    @commands.has_permissions(administrator=True)
-    async def setup_potd(ctx: commands.Context, channel: discord.TextChannel):
-        msg = await ctx.reply("Working on it...")
-        await add_channel(ctx.guild.id, channel.id)
-        await msg.edit(content=f"Channel {channel.mention} has been set up for Space Photo Of The Day!")
-
     @tasks.loop(hours=24)
     async def post_potd():
         posted = await potd(bot)
@@ -38,5 +30,5 @@ if __name__ == "__main__":
         activity=settings.ACTIVITY, 
         help_command=PrettyHelp()
     )
-    
+
     main(bot)
