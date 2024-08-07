@@ -5,11 +5,50 @@ from starplot import MapPlot, Projection, Star
 from starplot.styles import PlotStyle, extensions
 import tempfile
 import os
+from discord.ext import commands
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
+from datetime import datetime
+import discord
 import settings
 import matplotlib
 matplotlib.use("agg")
+
+async def potd(bot: commands.Bot):
+    await bot.wait_until_ready()
+    
+
+    last_post_date = await get_last_post_date()
+    today = datetime.utcnow().date().isoformat()
+
+    if last_post_date == today:
+        return "Already posted"
+
+    channels = await get_channels()
+    if not channels:
+        return
+
+    data = await retrieve("https://api.nasa.gov/planetary/apod")
+    title = data["title"]
+    explanation = data["explanation"]
+    url = data["hdurl"]
+    date = data["date"]
+
+    embed = discord.Embed(
+        title=title,
+        description=explanation,
+        url=url,
+        color=discord.Color.dark_green()
+    )
+    embed.set_image(url=url)
+    embed.set_footer(text=f"NASA Astronomy Picture of the Day - {date}")
+
+    for channel_id in channels:
+        channel = bot.get_channel(channel_id)
+        if channel:
+            await channel.send(embed=embed)
+
+    await update_last_post_date(today)
 
 def generate_star_chart(lat, lon, dt):
     p = MapPlot(
@@ -131,3 +170,15 @@ def plot_map(longitude: float, latitude: float) -> io.BytesIO:
     
     buffer.seek(0)
     return buffer
+
+
+async def load_cogs(bot: commands.Bot):
+    loaded = []
+    for cog_file in settings.COGS_DIR.glob("*.py"):
+        if cog_file.name != "__init__.py":
+            await bot.load_extension(f"cogs.{cog_file.name[:-3]}")
+            loaded.append("cogs." + cog_file.name[:-3])
+    loaded_str = ""
+    for i in loaded:
+        loaded_str += f"{i}, "
+    print(f"{loaded_str} successfully loaded")
