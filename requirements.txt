@@ -1,0 +1,5 @@
+discord.py==2.4.0
+aqlite==2.0.0
+starplot==0.10.2
+basemap==1.4.1
+python-dotenv==1.0.1

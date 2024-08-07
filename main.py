@@ -215,15 +215,4 @@ async def star_chart(ctx: commands.Context, timezone: str = "EST", *, location: 
 
     await msg.edit(content="", embed=embed, attachments=[file])
 
-@bot.command()
-async def edit(ctx: commands.Context):
-    msg = await ctx.reply("HGello!")
-
-    await asyncio.sleep(2)
-
-    embed=discord.Embed(title="jfnksdjf")
-
-    await msg.edit(content="HIII", embed=embed)
-
-
 bot.run(settings.TOKEN)
