@@ -81,13 +81,6 @@ class General(commands.Cog):
         invite_link = f"https://discord.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=8"
         await ctx.reply(f"Add me to your server using [this link]({invite_link})!")
 
-    @commands.hybrid_command(name='serverlist', description='Lists all servers the bot is a member of.')
-    @commands.is_owner()
-    async def serverlist(self, ctx: commands.Context):
-        """Lists all servers the bot is a member of (owner only)."""
-        servers = [guild.name for guild in self.bot.guilds]
-        await ctx.reply("\n".join(servers) if servers else "The bot is not in any servers.")
-
     @commands.hybrid_command(name='fact', description='Fetches a random fact from a facts API.')
     async def fact(self, ctx: commands.Context):
         """Fetches and displays a random fact from an external API."""
@@ -96,7 +89,11 @@ class General(commands.Cog):
                 data = await response.json()
         
         if 'text' not in data:
-            await ctx.reply("Unable to retrieve a fact at the moment.")
+            embed=discord.Embed(
+                description="Failed to retrieve a fact from the API.",
+                color=discord.Color.red()
+            )
+            await ctx.reply(embed=embed)
             return
         
         fact = data['text']
@@ -110,7 +107,11 @@ class General(commands.Cog):
                 data = await response.json()
         
         if 'quoteText' not in data or 'quoteAuthor' not in data:
-            await ctx.reply("Unable to retrieve a quote at the moment.")
+            embed=discord.Embed(
+                description="Failed to retrieve a quote from the API.",
+                color=discord.Color.red()
+            )
+            await ctx.reply(embed=embed)
             return
         
         quote = data['quoteText']

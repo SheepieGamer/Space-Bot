@@ -1,14 +1,13 @@
 import asqlite
 import aiohttp
 import io
-from typing import Tuple
 from starplot import MapPlot, Projection, Star
 from starplot.styles import PlotStyle, extensions
 from discord.ext import commands
 import pytz
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
-from datetime import datetime, timedelta
+from datetime import datetime
 import discord
 import settings
 import matplotlib
@@ -49,7 +48,6 @@ async def potd(bot: commands.Bot):
 
     await update_last_post_date(today)
     
-
 def generate_star_chart(lat, lon, dt):
     p = MapPlot(
         projection=Projection.ZENITH,
@@ -108,16 +106,6 @@ async def retrieve(url, params: dict={}, api_key_required: bool=True):
                 return data
             else:
                 raise ValueError(f"Error fetching data from API: {response.status}")
-
-async def setup_database():
-    async with asqlite.connect('space.db') as conn:
-        async with conn.cursor() as cursor:
-            await cursor.execute('''CREATE TABLE IF NOT EXISTS channels (
-                                    guild_id INTEGER PRIMARY KEY,
-                                    channel_id INTEGER NOT NULL)''')
-            await cursor.execute('''CREATE TABLE IF NOT EXISTS potd_last_post (
-                                    date TEXT PRIMARY KEY)''')
-        await conn.commit()
 
 async def add_channel(guild_id: int, channel_id: int):
     async with asqlite.connect('space.db') as conn:
@@ -235,157 +223,11 @@ async def fetch_moon_phase(timezone: str = "EST", location: str = "New York, USA
                 image_bytes = await image_response.read()
     
     return image_bytes
-async def setup_database():
-    async with asqlite.connect('space.db') as conn:
-        async with conn.cursor() as cursor:
-            await cursor.execute('''CREATE TABLE IF NOT EXISTS channels (
-                                    guild_id INTEGER PRIMARY KEY,
-                                    channel_id INTEGER NOT NULL)''')
-            await cursor.execute('''CREATE TABLE IF NOT EXISTS potd_last_post (
-                                    date TEXT PRIMARY KEY)''')
-            await cursor.execute('''CREATE TABLE IF NOT EXISTS users (
-                                    user_id INTEGER PRIMARY KEY,
-                                    balance INTEGER NOT NULL DEFAULT 0,
-                                    last_daily TEXT)''')
-        await conn.commit()
 
-async def get_balance(user_id: int) -> int:
-    async with asqlite.connect('space.db') as conn:
-        async with conn.cursor() as cursor:
-            await cursor.execute('SELECT balance FROM users WHERE user_id = ?', (user_id,))
-            result = await cursor.fetchone()
-            if result:
-                return result[0]
-            else:
-                await cursor.execute('INSERT INTO users (user_id, balance) VALUES (?, 0)', (user_id,))
-                await conn.commit()
-                return 0
-
-async def can_claim_daily(user_id: int) -> Tuple[bool, str]:
-    async with asqlite.connect('space.db') as conn:
-        async with conn.cursor() as cursor:
-            await cursor.execute('SELECT last_daily FROM users WHERE user_id = ?', (user_id,))
-            result = await cursor.fetchone()
-            if result and result[0]:
-                last_daily = datetime.fromisoformat(result[0])
-                next_daily = last_daily + timedelta(days=1)
-                now = datetime.utcnow()
-                if now >= next_daily:
-                    return True, ""
-                else:
-                    time_left = next_daily - now
-                    return False, str(time_left)
-            else:
-                return True, ""
-
-async def claim_daily(user_id: int) -> int:
-    reward = 1000
-    async with asqlite.connect('space.db') as conn:
-        async with conn.cursor() as cursor:
-            await cursor.execute('UPDATE users SET balance = balance + ?, last_daily = ? WHERE user_id = ?', (reward, datetime.utcnow().isoformat(), user_id))
-            await conn.commit()
-    return reward
-
-async def transfer_credits(sender_id: int, receiver_id: int, amount: int):
-    async with asqlite.connect('space.db') as conn:
-        async with conn.cursor() as cursor:
-            await cursor.execute('UPDATE users SET balance = balance - ? WHERE user_id = ?', (amount, sender_id))
-            await cursor.execute('INSERT INTO users (user_id, balance) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET balance = balance + ?', (receiver_id, amount, amount))
-            await conn.commit()
-
-
-async def setup_database():
-    async with asqlite.connect('space.db') as conn:
-        async with conn.cursor() as cursor:
-            await cursor.execute('''CREATE TABLE IF NOT EXISTS channels (
-                                    guild_id INTEGER PRIMARY KEY,
-                                    channel_id INTEGER NOT NULL)''')
-            await cursor.execute('''CREATE TABLE IF NOT EXISTS potd_last_post (
-                                    date TEXT PRIMARY KEY)''')
-            await cursor.execute('''CREATE TABLE IF NOT EXISTS users (
-                                    user_id INTEGER PRIMARY KEY,
-                                    balance INTEGER NOT NULL DEFAULT 0,
-                                    last_daily TEXT)''')
-            await cursor.execute('''CREATE TABLE IF NOT EXISTS shop_items (
-                                    item_id TEXT PRIMARY KEY,
-                                    item_name TEXT NOT NULL,
-                                    item_price INTEGER NOT NULL)''')
-            await cursor.execute('''CREATE TABLE IF NOT EXISTS user_inventory (
-                                    user_id INTEGER NOT NULL,
-                                    item_id TEXT NOT NULL,
-                                    quantity INTEGER NOT NULL,
-                                    PRIMARY KEY (user_id, item_id),
-                                    FOREIGN KEY (item_id) REFERENCES shop_items(item_id))''')
-        await conn.commit()
-
-async def add_shop_item(item_id: str, item_name: str, item_price: int):
-    async with asqlite.connect('space.db') as conn:
-        async with conn.cursor() as cursor:
-            await cursor.execute('INSERT INTO shop_items (item_id, item_name, item_price) VALUES (?, ?, ?)',
-                                 (item_id, item_name, item_price))
-        await conn.commit()
-
-async def get_shop_items():
-    async with asqlite.connect('space.db') as conn:
-        async with conn.cursor() as cursor:
-            await cursor.execute('SELECT item_id, item_name, item_price FROM shop_items')
-            items = await cursor.fetchall()
-    return items
-
-async def add_to_inventory(user_id: int, item_id: str, quantity: int):
-    async with asqlite.connect('space.db') as conn:
-        async with conn.cursor() as cursor:
-            await cursor.execute('''INSERT INTO user_inventory (user_id, item_id, quantity)
-                                   VALUES (?, ?, ?)
-                                   ON CONFLICT(user_id, item_id) DO UPDATE SET quantity = quantity + ?''',
-                                 (user_id, item_id, quantity, quantity))
-        await conn.commit()
-
-async def get_inventory(user_id: int):
-    async with asqlite.connect('space.db') as conn:
-        async with conn.cursor() as cursor:
-            await cursor.execute('''SELECT shop_items.item_name, shop_items.item_id, user_inventory.quantity
-                                   FROM user_inventory
-                                   JOIN shop_items ON user_inventory.item_id = shop_items.item_id
-                                   WHERE user_inventory.user_id = ?''', (user_id,))
-            inventory = await cursor.fetchall()
-    return inventory
-
-
-
-async def buy_item(user_id: int, item_id: str):
-    async with asqlite.connect('space.db') as conn:
-        async with conn.cursor() as cursor:
-            await cursor.execute('SELECT item_price FROM shop_items WHERE item_id = ?', (item_id,))
-            item_price = await cursor.fetchone()
-            if not item_price:
-                return False, "Item not found."
-            item_price = item_price[0]
-
-            await cursor.execute('SELECT balance FROM users WHERE user_id = ?', (user_id,))
-            balance = await cursor.fetchone()
-            if not balance or balance[0] < item_price:
-                return False, "Insufficient balance."
-
-            await cursor.execute('UPDATE users SET balance = balance - ? WHERE user_id = ?', (item_price, user_id))
-            await add_to_inventory(user_id, item_id, 1)
-        await conn.commit()
-    return True, "Purchase successful."
-
-async def remove_item(user_id: int, item_id: str, quantity: int) -> None:
-    async with asqlite.connect('space.db') as conn:
-        async with conn.cursor() as cursor:
-            await cursor.execute('SELECT quantity FROM user_inventory WHERE user_id = ? AND item_id = ?', (user_id, item_id))
-            result = await cursor.fetchone()
-            if result and result[0] >= quantity:
-                await cursor.execute('UPDATE user_inventory SET quantity = quantity - ? WHERE user_id = ? AND item_id = ?', (quantity, user_id, item_id))
-                if result[0] - quantity == 0:
-                    await cursor.execute('DELETE FROM user_inventory WHERE user_id = ? AND item_id = ?', (user_id, item_id))
-                await conn.commit()
-
-async def add_balance(user_id: int, amount: int) -> None:
-    async with asqlite.connect('space.db') as conn:
-        async with conn.cursor() as cursor:
-            await cursor.execute('INSERT OR IGNORE INTO users (user_id, balance) VALUES (?, ?)', (user_id, 0))
-            await cursor.execute('UPDATE users SET balance = balance + ? WHERE user_id = ?', (amount, user_id))
-            await conn.commit()
+def make_embed(title=None, description=None, color=None):
+    embed = discord.Embed(
+        title=title,
+        description=description,
+        color=color
+    )
+    return embed

@@ -37,6 +37,7 @@ class Owner(commands.Cog):
             module = f"cogs.{cog[:-3]}"
             await ctx.bot.reload_extension(module)
             await ctx.send(f"Reloaded {cog}")
+            print(f"{cog} successfully reloaded")
         except Exception as e:
             await ctx.send(f"Error reloading {cog}: {str(e)}")
 
@@ -49,6 +50,7 @@ class Owner(commands.Cog):
             module = f"cogs.{cog[:-3]}"
             await ctx.bot.unload_extension(module)
             await ctx.send(f"Unloaded {cog}")
+            print(f"{cog} successfully unloaded")
         except Exception as e:
             await ctx.send(f"Error unloading {cog}: {str(e)}")
     
@@ -61,8 +63,20 @@ class Owner(commands.Cog):
             module = f"cogs.{cog[:-3]}"
             await ctx.bot.load_extension(module)
             await ctx.send(f"Loaded {cog}")
+            print(f"{cog} successfully loaded")
         except Exception as e:
             await ctx.send(f"Error loading {cog}: {str(e)}")
+
+    @commands.hybrid_command(name='serverlist', description='Lists all servers the bot is a member of.')
+    @commands.is_owner()
+    async def serverlist(self, ctx: commands.Context):
+        """Lists all servers the bot is a member of (owner only)."""
+        servers = [guild.name for guild in self.bot.guilds]
+        embed=discord.Embed(
+            description="\n".join(servers) if servers else "The bot is not in any servers.",
+            color=discord.Color.green()
+        )
+        await ctx.reply(embed=embed)
 
 
 async def setup(bot: commands.Bot):
