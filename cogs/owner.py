@@ -28,5 +28,42 @@ class Owner(commands.Cog):
         fmt = await ctx.bot.tree.sync(guild=ctx.guild)
         await msg.edit(content=f"Synced {len(fmt)} commands to the current guild.")
 
+    @commands.command(aliases=["reload"])
+    @commands.is_owner()
+    async def reload_cog(self, ctx: commands.Context, cog: str):
+        if not cog.endswith(".py"):
+            cog += ".py"
+        try:
+            module = f"cogs.{cog[:-3]}"
+            await ctx.bot.reload_extension(module)
+            await ctx.send(f"Reloaded {cog}")
+        except Exception as e:
+            await ctx.send(f"Error reloading {cog}: {str(e)}")
+
+    @commands.command(aliases=["unload"])
+    @commands.is_owner()
+    async def unload_cog(self, ctx: commands.Context, cog: str):
+        if not cog.endswith(".py"):
+            cog += ".py"
+        try:
+            module = f"cogs.{cog[:-3]}"
+            await ctx.bot.unload_extension(module)
+            await ctx.send(f"Unloaded {cog}")
+        except Exception as e:
+            await ctx.send(f"Error unloading {cog}: {str(e)}")
+    
+    @commands.command(aliases=["load"])
+    @commands.is_owner()
+    async def load_cog(self, ctx: commands.Context, cog: str):
+        if not cog.endswith(".py"):
+            cog += ".py"
+        try:
+            module = f"cogs.{cog[:-3]}"
+            await ctx.bot.load_extension(module)
+            await ctx.send(f"Loaded {cog}")
+        except Exception as e:
+            await ctx.send(f"Error loading {cog}: {str(e)}")
+
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(Owner(bot))

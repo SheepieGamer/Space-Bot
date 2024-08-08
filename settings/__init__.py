@@ -9,6 +9,8 @@ from discord.ext import commands
 
 TOKEN = os.getenv('BOT_TOKEN') # Discord bot token
 NASA = os.getenv('NASA_TOKEN') # Nasa API token
+OPEN_WEATHER = os.getenv('MAP_TOKEN') # https://home.openweathermap.org/api_keys
+
 
 ASTRO_ID = os.getenv('ASTRO_API_ID')
 ASTRO_SECRET = os.getenv('ASTRO_API_SECRET')

@@ -1,4 +1,6 @@
-channels.db
+space.db
 __pycache__/
 .env
 .venv/
+space.db-shm
+space.db-wal

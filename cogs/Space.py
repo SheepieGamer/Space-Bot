@@ -286,6 +286,52 @@ class Space(commands.Cog):
         # Send the image as an attachment
         await msg.edit(content="", embed=embed, attachments=[discord.File(fp=image_bytes, filename=f"space_fact{number}.jpg")])
 
+    @commands.hybrid_command(name='weather', description='Provides current weather information for a specified city.')
+    async def weather(self, ctx: commands.Context, units: str="imperial", *, location: str = "New York, USA"):
+        """Fetches and displays current weather information for a specified city or coordinates."""
+        
+        msg = await ctx.reply("Working on it...")
+
+        if units not in ['imperial','metric']:
+            await msg.edit(content="Invalid unit. Please use either 'imperial' or 'metric'.")
+            return
+
+        geocode_data = await retrieve("https://nominatim.openstreetmap.org/search", params={"q": location, "format": "json"}, api_key_required=False)
+        try:
+            if not geocode_data or not geocode_data[0].get("place_id"):
+                return await msg.edit(content="Unable to retrieve location data. Please try again with a different location. Maybe it was a typo?")
+        except IndexError:
+            return await msg.edit(content="Unable to retrieve location data. Please try again with a different location. Maybe it was a typo?")
+        
+        first_result = geocode_data[0]
+        latitude = float(first_result["lat"])
+        longitude = float(first_result["lon"])
+
+        api_key = settings.OPEN_WEATHER
+        base_url = 'http://api.openweathermap.org/data/2.5/weather'
+        params = {
+            'appid': api_key,
+            'units': units,
+            'lat': latitude,
+            'lon': longitude
+        }
+
+        data: dict = await retrieve(base_url, params=params, api_key_required=False)
+
+        if data.get('cod') != 200:
+            await msg.edit(content="Unable to retrieve weather information. Please check the location.")
+            return
+
+        embed = discord.Embed(
+            title=f"Weather in {data['name']}, {data['sys']['country']}",
+            color=discord.Color.blue()
+        )
+        embed.add_field(name="Temperature", value=f"{data['main']['temp']}°{'C' if units == 'metric' else 'F'}", inline=True)
+        embed.add_field(name="Weather", value=data['weather'][0]['description'].capitalize(), inline=True)
+        embed.add_field(name="Humidity", value=f"{data['main']['humidity']}%", inline=True)
+        embed.add_field(name="Wind Speed", value=f"{data['wind']['speed']} {'m/s' if units == 'metric' else 'mph'}", inline=True)
+        await msg.edit(content="", embed=embed)
+
 
 
 async def setup(bot: commands.Bot):
