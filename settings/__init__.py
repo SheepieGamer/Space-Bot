@@ -20,7 +20,8 @@ ASTRO_API = base64.b64encode(userpass.encode()).decode() # https://docs.astronom
 
 COMMAND_PREFIX = commands.when_mentioned_or("s!")
 INTENTS = discord.Intents.all()
-ACTIVITY = discord.Activity(type=discord.ActivityType.watching, name="over space.")
+ACTIVITY = discord.Activity(type=discord.ActivityType.watching, name="over space. | s!help")
+STATUS = discord.Status.idle
 
 BASE_DIR = pathlib.Path(__file__).parent.parent
 COGS_DIR = BASE_DIR / "cogs"

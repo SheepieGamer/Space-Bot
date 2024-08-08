@@ -48,7 +48,8 @@ if __name__ == "__main__":
     bot = commands.Bot(
         command_prefix=settings.COMMAND_PREFIX, 
         intents=settings.INTENTS, 
-        activity=settings.ACTIVITY, 
+        activity=settings.ACTIVITY,
+        status=settings.STATUS,
         help_command=PrettyHelp()
     )
 

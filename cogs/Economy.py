@@ -242,9 +242,9 @@ class Economy(commands.Cog):
             )
             await ctx.reply(embed=embed)
 
-    @commands.hybrid_command(name='inventory', description='Show your inventory.')
+    @commands.hybrid_command(name='inventory', description='Show your inventory.', aliases=["inv"])
     @commands.cooldown(1,3, commands.BucketType.user)
-    async def inventory(self, ctx: commands.Context, page: int = 1):
+    async def inventory(self, ctx: commands.Context, user: discord.Member = commands.Author, page: int = 1):
         """Show your inventory."""
         user_id = ctx.author.id
         inventory = await get_inventory(user_id)

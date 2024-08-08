@@ -48,6 +48,16 @@ async def setup_database():
                                     PRIMARY KEY (user_id, job_id),
                                     FOREIGN KEY (user_id) REFERENCES users(user_id),
                                     FOREIGN KEY (job_id) REFERENCES jobs(job_id))''')
+            # Trades table
+            await cursor.execute('''CREATE TABLE IF NOT EXISTS trades (
+                                    trade_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    user1_id INTEGER,
+                                    user2_id INTEGER,
+                                    user1_items TEXT,
+                                    user2_items TEXT,
+                                    user1_credits INTEGER,
+                                    user2_credits INTEGER,
+                                    status TEXT DEFAULT 'pending')''')
             # Check if the column 'last_work_time' exists, and if not, add it
             await cursor.execute('PRAGMA table_info(user_jobs)')
             columns = [row[1] for row in await cursor.fetchall()]
@@ -59,6 +69,5 @@ async def setup_database():
             columns = [row[1] for row in await cursor.fetchall()]
             if 'job_points' not in columns:
                 await cursor.execute('ALTER TABLE users ADD COLUMN job_points INTEGER NOT NULL DEFAULT 0')
-
 
         await conn.commit()
