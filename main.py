@@ -5,19 +5,39 @@ import traceback
 from discord.ext import commands
 import settings
 from economy.job import add_job
-from economy import setup_database
+from economy import setup_database, initialize_stocks
+from economy.stocks import random_price_fluctuation
 
 def main(bot: commands.Bot):
     @bot.event
     async def on_ready():
-        print(f'Logged in as {bot.user.name}')
-        await setup_database()
-        await load_cogs(bot)
-        await add_job("astronaut", "Astronaut", "Explore space and conduct research.", 5000, 0.2)
-        await add_job("engineer", "Space Engineer", "Design and build spacecraft.", 3000, 0.4)
-        await add_job("pilot", "Spacecraft Pilot", "Pilot spacecraft on missions.", 4000, 0.3)
-        await add_job("scientist", "Space Scientist", "Conduct scientific experiments in space.", 3500, 0.35)
-        await add_job("technician", "Space Technician", "Maintain and repair spacecraft.", 2500, 0.5)
+        try:
+            print(f'Logged in as {bot.user} ({bot.user.id})')
+            
+            # Load cogs
+            await load_cogs(bot)
+            print("Cogs loaded")
+
+            # Initialize the database
+            await setup_database()
+            print("Database initialized")
+
+            # Initialize stocks
+            await initialize_stocks()
+
+            # Start random price fluctuations
+            bot.loop.create_task(random_price_fluctuation())
+            
+            # Add initial jobs
+            await add_job("astronaut", "Astronaut", "Explore space and conduct research.", 5000, 0.2)
+            await add_job("engineer", "Space Engineer", "Design and build spacecraft.", 3000, 0.4)
+            await add_job("pilot", "Spacecraft Pilot", "Pilot spacecraft on missions.", 4000, 0.3)
+            await add_job("scientist", "Space Scientist", "Conduct scientific experiments in space.", 3500, 0.35)
+            await add_job("technician", "Space Technician", "Maintain and repair spacecraft.", 2500, 0.5)
+            print("Economy, jobs, and the stock market have been initialized.")
+
+        except Exception as e:
+            print(f"An error occurred during on_ready: {e}")
 
 
     @bot.event

@@ -24,7 +24,7 @@ class Economy(commands.Cog):
         balance = await get_balance(user_id)
         embed = discord.Embed(
             title=f"{user.display_name}'s Balance",
-            description=f"{user.mention} has **{balance}** space credits.",
+            description=f"{user.mention} has **{balance:.2f} space credits**.",
             color=discord.Color.blue()
         )
         await ctx.reply(embed=embed)
