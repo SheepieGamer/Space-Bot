@@ -7,6 +7,8 @@ import settings
 from economy.job import add_job
 from economy import setup_database, initialize_stocks
 from economy.stocks import random_price_fluctuation
+from render_com import keep_alive
+keep_alive()
 
 def main(bot: commands.Bot):
     @bot.event
