@@ -51,12 +51,13 @@
    BOT_TOKEN = "your_discord_bot_token"
    NASA_TOKEN = "your_nasa_api_key"
    MAP_TOKEN = "your_openweathermap_token"
+   
+
+   ASTRO_API_SECRET = "your_astronomyapi_secret"
+   ASTRO_API_ID = "your_astronomyapi_id"
    ```
 
-ASTRO_API_SECRET = "your_astronomyapi_secret"
-ASTRO_API_ID = "your_astronomyapi_id"
 
-````
 
 5. **Set Up the Database**
 
@@ -68,7 +69,7 @@ Start the bot using the following command:
 
 ```bash
 python main.py
-````
+```
 
 ## Usage
 
